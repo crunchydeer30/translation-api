@@ -1,0 +1,425 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator jsonTypes {
+  provider = "prisma-json-types-generator"
+}
+
+// Enums
+enum EditorRole {
+  REGULAR
+  SENIOR
+
+  @@map("editor_roles")
+}
+
+enum EditorLanguagePairQualificationStatus {
+  INITIAL_EVALUATION_REQUIRED
+  INITIAL_EVALUATION_IN_PROGRESS
+  QUALIFIED
+  NOT_QUALIFIED
+
+  @@map("editor_language_pair_qualification_statuses")
+}
+
+enum EditorApplicationStatus {
+  PENDING_REVIEW
+  ACCEPTED
+  REJECTED
+  REGISTRATION_PENDING
+  COMPLETED
+
+  @@map("editor_application_statuses")
+}
+
+enum EvaluationSetStatus {
+  IN_PROGRESS
+  READY_FOR_REVIEW
+  REVIEWING
+  COMPLETED
+
+  @@map("evaluation_set_statuses")
+}
+
+enum EvaluationDifficulty {
+  EASY
+  MEDIUM
+  HARD
+
+  @@map("evaluation_difficulties")
+}
+
+enum EvaluationType {
+  INITIAL_QUALIFICATION
+  PERIODIC_REVIEW
+
+  @@map("evaluation_types")
+}
+
+enum StaffRole {
+  ADMIN
+  SUPPORT
+  CONTENT_MANAGER
+
+  @@map("staff_roles")
+}
+
+enum TranslationStage {
+  QUEUED_FOR_PROCESSING
+  PROCESSING
+  QUEUED_FOR_MT
+  MACHINE_TRANSLATING
+  QUEUED_FOR_EDITING
+  EDITING
+  RECONSTRUCTING
+  COMPLETED
+  CANCELED
+
+  @@map("translation_stages")
+}
+
+enum TranslationTaskStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  ERROR
+  REJECTED
+  CANCELED
+
+  @@map("translation_task_statuses")
+}
+
+enum TranslationTaskType {
+  HTML
+  PLAIN_TEXT
+  XLIFF
+  SRT
+  CSV
+
+  @@map("translation_task_type")
+}
+
+enum TranslationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ERROR
+  CANCELED
+
+  @@map("translation_statuses")
+}
+
+enum ContentSegmentType {
+  TEXT
+  HTML_BLOCK
+  HTML_INLINE
+  XLIFF_UNIT
+  SRT_SUBTITLE
+  CSV_CELL
+
+  @@map("content_segment_types")
+}
+
+// Models
+model Customer {
+  id                         String  @id @default(uuid()) @db.Uuid
+  email                      String  @unique
+  passwordHash               String  @map("password_hash")
+  firstName                  String  @map("first_name")
+  lastName                   String  @map("last_name")
+  emailVerified              Boolean @default(false) @map("email_verified")
+  emailVerificationTokenHash String? @map("email_verification_token_hash")
+  passwordResetTokenHash     String? @map("password_reset_token_hash")
+
+  translations Translation[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+model Editor {
+  id                     String     @id @default(uuid()) @db.Uuid
+  email                  String     @unique
+  passwordHash           String     @map("password_hash")
+  firstName              String     @map("first_name")
+  lastName               String     @map("last_name")
+  role                   EditorRole @map("role")
+  passwordResetTokenHash String?    @map("password_reset_token_hash")
+
+  languagePairs EditorLanguagePair[]
+  applications  EditorApplication[]  @relation("ApplicantApplications")
+
+  evaluationSetsAsApplicant EvaluationSet[] @relation("EditorEvaluationSets")
+  evaluationSetsAsReviewer  EvaluationSet[] @relation("SeniorEditorReviewedEvaluationSets")
+
+  editedTasks TranslationTask[] @relation("EditorTasks")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("editors")
+}
+
+model StaffMember {
+  id                     String    @id @default(uuid()) @db.Uuid
+  email                  String    @unique
+  passwordHash           String    @map("password_hash")
+  firstName              String    @map("first_name")
+  lastName               String    @map("last_name")
+  role                   StaffRole @map("role")
+  passwordResetTokenHash String?   @map("password_reset_token_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("staff_members")
+}
+
+model Language {
+  code String @id
+  name String
+
+  sourceFor LanguagePair[] @relation("SourceLanguage")
+  targetFor LanguagePair[] @relation("TargetLanguage")
+
+  translationSourceLanguages Translation[] @relation("TranslationSourceLanguage")
+  translationTargetLanguages Translation[] @relation("TranslationTargetLanguage")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("languages")
+}
+
+model LanguagePair {
+  id                 String   @id @default(uuid()) @db.Uuid
+  sourceLanguage     Language @relation("SourceLanguage", fields: [sourceLanguageCode], references: [code])
+  sourceLanguageCode String   @map("source_language_code")
+  targetLanguage     Language @relation("TargetLanguage", fields: [targetLanguageCode], references: [code])
+  targetLanguageCode String   @map("target_language_code")
+  isAcceptingEditors Boolean  @default(false) @map("is_accepting_editors")
+
+  editors                        EditorLanguagePair[]
+  editorApplicationLanguagePairs EditorApplicationLanguagePair[]
+  evaluationSets                 EvaluationSet[]
+  translationTasks               TranslationTask[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([sourceLanguageCode, targetLanguageCode])
+  @@map("language_pairs")
+}
+
+model EditorLanguagePair {
+  id String @id @default(uuid()) @db.Uuid
+
+  editorId       String       @map("editor_id") @db.Uuid
+  editor         Editor       @relation(fields: [editorId], references: [id])
+  languagePairId String       @map("language_pair_id") @db.Uuid
+  languagePair   LanguagePair @relation(fields: [languagePairId], references: [id])
+
+  qualificationStatus EditorLanguagePairQualificationStatus @map("qualification_status")
+  rating              Float?
+  lastEvaluationAt    DateTime?                             @map("last_evaluation_at")
+
+  evaluationSet EvaluationSet? @relation("EvaluationForLanguagePair")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([editorId, languagePairId], name: "uq_editor_language_pairs_editor_language_pair")
+  @@map("editor_language_pairs")
+}
+
+model Translation {
+  id     String            @id @default(uuid()) @db.Uuid
+  status TranslationStatus @default(PENDING)
+
+  customerId         String   @map("customer_id") @db.Uuid
+  customer           Customer @relation(fields: [customerId], references: [id])
+  sourceLanguageCode String   @map("source_language_code")
+  sourceLanguage     Language @relation("TranslationSourceLanguage", fields: [sourceLanguageCode], references: [code])
+  targetLanguageCode String   @map("target_language_code")
+  targetLanguage     Language @relation("TranslationTargetLanguage", fields: [targetLanguageCode], references: [code])
+  skipEditing        Boolean  @map("skip_editing")
+
+  originalContent   String              @map("original_content")
+  translatedContent String?             @map("translated_content")
+  format            TranslationTaskType
+
+  translationTaskId String?          @unique @map("translation_task_id") @db.Uuid
+  translationTask   TranslationTask? @relation(fields: [translationTaskId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("translations")
+}
+
+model TranslationTask {
+  id String @id @default(uuid()) @db.Uuid
+
+  languagePairId String       @map("language_pair_id") @db.Uuid
+  languagePair   LanguagePair @relation(fields: [languagePairId], references: [id])
+
+  editorId String? @map("editor_id") @db.Uuid
+  editor   Editor? @relation("EditorTasks", fields: [editorId], references: [id])
+
+  originalContent   String              @map("original_content")
+  formatType        TranslationTaskType @map("format_type")
+  /// [OriginalStructure]
+  originalStructure Json?               @map("original_structure") @db.JsonB
+  finalContent      String?             @map("final_content")
+  skipEditing       Boolean             @map("skip_editing")
+
+  status       TranslationTaskStatus
+  currentStage TranslationStage      @map("current_stage")
+  errorMessage String?               @map("error_message")
+
+  translation Translation?
+  segments    TranslationTaskSegment[]
+
+  editorAssignedAt  DateTime? @map("editor_assigned_at")
+  editorCompletedAt DateTime? @map("editor_completed_at")
+
+  isEvaluationTask Boolean @map("is_evaluation_task")
+
+  assignedAt      DateTime?        @map("assigned_at")
+  completedAt     DateTime?        @map("completed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  evaluationTasks EvaluationTask[]
+
+  @@map("translation_tasks")
+}
+
+model TranslationTaskSegment {
+  id                String          @id @default(uuid()) @db.Uuid
+  translationTaskId String          @map("translation_task_id") @db.Uuid
+  translationTask   TranslationTask @relation(fields: [translationTaskId], references: [id], onDelete: Cascade)
+
+  segmentOrder Int                @map("segment_order")
+  segmentType  ContentSegmentType @map("segment_type")
+
+  sourceContent            String  @map("source_content")
+  anonymizedContent        String  @map("anonymized_content")
+  machineTranslatedContent String? @map("machine_translated_content")
+  editedContent            String? @map("edited_content")
+
+  /// [TranslationSpecialTokenMap]
+  specialTokensMap Json? @map("special_tokens_map") @db.JsonB
+  /// [FormatMetadata]
+  formatMetadata   Json? @map("format_metadata") @db.JsonB
+
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+  sensitiveDataMapping SensitiveDataMapping[]
+
+  @@index([translationTaskId, segmentOrder])
+  @@map("translation_task_segments")
+}
+
+model EditorApplication {
+  id        String                  @id @default(uuid()) @db.Uuid
+  email     String                  @unique
+  firstName String
+  lastName  String
+  status    EditorApplicationStatus @default(PENDING_REVIEW)
+
+  requestedLanguagePairs  EditorApplicationLanguagePair[]
+  registrationTokenHash   String?                         @unique @map("registration_token_hash")
+  registrationTokenIsUsed Boolean?                        @default(false) @map("registration_token_is_used")
+
+  editorId String? @unique @map("editor_id") @db.Uuid
+  editor   Editor? @relation("ApplicantApplications", fields: [editorId], references: [id])
+
+  rejectionReason String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("editor_applications")
+}
+
+model EditorApplicationLanguagePair {
+  id String @id @default(uuid()) @db.Uuid
+
+  applicationId String            @map("application_id") @db.Uuid
+  application   EditorApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  languagePairId String       @map("language_pair_id") @db.Uuid
+  languagePair   LanguagePair @relation(fields: [languagePairId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([applicationId, languagePairId])
+  @@map("editor_application_language_pairs")
+}
+
+model EvaluationSet {
+  id            String              @id @default(uuid()) @db.Uuid
+  type          EvaluationType      @map("type")
+  status        EvaluationSetStatus @map("status")
+  averageRating Float?              @map("average_rating")
+
+  editorId       String       @map("editor_id") @db.Uuid
+  editor         Editor       @relation("EditorEvaluationSets", fields: [editorId], references: [id])
+  languagePairId String       @map("language_pair_id") @db.Uuid
+  languagePair   LanguagePair @relation(fields: [languagePairId], references: [id])
+
+  evaluatorId String? @map("evaluator_id") @db.Uuid
+  evaluator   Editor? @relation("SeniorEditorReviewedEvaluationSets", fields: [evaluatorId], references: [id])
+
+  editorLanguagePairId String?             @unique @map("editor_language_pair_id") @db.Uuid
+  editorLanguagePair   EditorLanguagePair? @relation("EvaluationForLanguagePair", fields: [editorLanguagePairId], references: [id])
+
+  tasks EvaluationTask[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([editorId, languagePairId, createdAt], name: "uq_evaluation_sets_editor_lp_created")
+  @@map("evaluation_sets")
+}
+
+model EvaluationTask {
+  id                   String  @id @default(uuid()) @db.Uuid
+  rating               Int?
+  seniorEditorFeedback String? @map("senior_editor_feedback")
+
+  translationTaskId String           @unique @map("translation_task_id") @db.Uuid
+  translationTask   TranslationTask? @relation(fields: [translationTaskId], references: [id], onDelete: Cascade)
+
+  evaluationSetId String        @map("evaluation_set_id") @db.Uuid
+  evaluationSet   EvaluationSet @relation(fields: [evaluationSetId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("evaluation_tasks")
+}
+
+model SensitiveDataMapping {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  translationSegmentId String                 @map("translation_task_id") @db.Uuid
+  translationSegment   TranslationTaskSegment @relation(fields: [translationSegmentId], references: [id], onDelete: Cascade)
+
+  tokenIdentifier String @map("token_identifier")
+  sensitiveType   String @map("sensitive_type")
+  originalValue   String @map("original_value")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([translationSegmentId, tokenIdentifier])
+  @@map("sensitive_data_mappings")
+}
