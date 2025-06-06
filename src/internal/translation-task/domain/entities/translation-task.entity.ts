@@ -271,8 +271,8 @@ export class TranslationTask extends AggregateRoot implements ITranslationTask {
   }
 
   public completeTask(): void {
-    this.status = TranslationTaskStatus.IN_PROGRESS;
-    this.currentStage = TranslationStage.RECONSTRUCTING;
+    this.status = TranslationTaskStatus.COMPLETED;
+    this.currentStage = TranslationStage.COMPLETED;
     this.editorCompletedAt = new Date();
 
     if (this.isEvaluationTask) {
@@ -380,9 +380,6 @@ export class TranslationTask extends AggregateRoot implements ITranslationTask {
     );
 
     this.finalContent = finalContent;
-    this.status = TranslationTaskStatus.COMPLETED;
-    this.currentStage = TranslationStage.COMPLETED;
-    this.completedAt = new Date();
 
     this.apply(
       new TaskReconstructionCompletedEvent({
