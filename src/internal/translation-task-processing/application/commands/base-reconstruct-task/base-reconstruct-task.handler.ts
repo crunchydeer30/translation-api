@@ -64,6 +64,7 @@ export abstract class BaseReconstructTaskHandler
 
       task.completeReconstruction(finalContent);
       await this.translationTaskRepository.save(task);
+      task.commit();
 
       return {
         taskId: task.id,
