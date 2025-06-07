@@ -63,7 +63,7 @@ export class RateEvaluationTaskHandler
       throw new DomainException(ERRORS.EVALUATION.TASK_NOT_FOUND);
     }
 
-    if (evaluationTask.rating !== undefined) {
+    if (evaluationTask.rating) {
       throw new DomainException(ERRORS.EVALUATION.TASK_ALREADY_RATED);
     }
 
