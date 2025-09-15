@@ -22,7 +22,7 @@ Built as a coursework/learning project to practice complex and robust real‑wor
 - Human‑in‑the‑loop editing with validation and two editorial tiers
 - Periodic performance reviews by senior editors as part of QA
 - Role‑based access for customers, editors, and staff
-- Designed for integration with existing systems (e.g., Zendesk, Freshdesk, Jira Service Management) and works great with email pipelines
+- Designed for integration with existing systems and works great with email pipelines
 
 ### Processing flow
 1) Customer submits a translation order (plain text/HTML/XLIFF)
