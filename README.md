@@ -1,4 +1,4 @@
-### Translation API
+### LangOps platform - Learning project
 
 Backend service for a hybrid Machine Translation + Human-in-the-Loop platform (inspired by Unbabel). It orchestrates translation orders end‑to‑end: segmentation and anonymization of source content, machine translation with subsequent human editing with, and quality reviews. 
 
