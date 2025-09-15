@@ -2,7 +2,7 @@
 
 Backend service for a hybrid Machine Translation + Human-in-the-Loop platform (inspired by Unbabel). It orchestrates translation orders end‑to‑end: segmentation and anonymization of source content, machine translation with subsequent human editing with, and quality reviews. 
 
-This API is meant to pluggable by design amd integrate cleanly into existing ticketing/helpdesk/CRM system (e.g., Zendesk, Freshdesk, Jira Service Management).
+This API is meant to pluggable by design amd integrate cleanly into existing ticketing/helpdesk/CRM systems (e.g., Zendesk).
 
 Built as a coursework/learning project to practice complex and robust real‑world backend architectural patterns.
 
