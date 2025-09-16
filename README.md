@@ -17,7 +17,7 @@ Built as a coursework/learning project to practice complex and robust real‑wor
 
 ### What it does
 - Accepts translation orders in multiple formats: plain text, HTML, XLIFF
-- Anonymizes PII before MT and deanonymizes during reconstruction (AI‑assisted: hybrid rule‑based + ML NER via Microsoft Presidio with pretrained spaCy models)
+- Performas AI assisted anonymization of PII in the source text before MT and deanonymizes during reconstruction
 - Uses DeepL for machine translation with tag handling and batching
 - Human‑in‑the‑loop editing with validation and two editorial tiers
 - Periodic performance reviews by senior editors as part of QA
