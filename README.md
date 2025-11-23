@@ -6,7 +6,7 @@ This API is meant to pluggable by design amd integrate cleanly into existing tic
 
 Built as a coursework/learning project to practice complex and robust real‑world backend architectural patterns.
 
-— Part of a two‑service system: this NestJS API and a Python FastAPI anonymizer service.
+Part of a two‑service system: this NestJS API and a Python FastAPI anonymizer service.
 
 ### Learning goals
 - Domain‑Driven Design
